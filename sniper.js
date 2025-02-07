@@ -5,7 +5,7 @@ import dotenv from "dotenv";
 dotenv.config();
 
 // Deine Helius RPC URL (ersetze durch deinen eigenen API Key)
-const PRIVATE_RPC = "https://mainnet.helius-rpc.com/?api-key=DEIN_HELIUS_API_KEY";  
+const PRIVATE_RPC = "https://mainnet.helius-rpc.com/?api-key=03364cae-c434-41ae-b25a-70efc490d68d";  
 const connection = new Connection(PRIVATE_RPC, {
     commitment: "confirmed",
     wsEndpoint: "wss://mainnet.helius-rpc.com"
