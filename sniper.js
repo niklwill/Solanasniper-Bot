@@ -47,11 +47,17 @@ async function getPools(DEX) {
     try {
         const response = await fetch(DEX_APIS[DEX]);
         const data = await response.json();
+        
+        console.log(`Fetched data from ${DEX}:`, data); // 🛑 Debug-Ausgabe
+        
         return data;
     } catch (error) {
-        console.error(`Fehler beim Abrufen der ${DEX} Pools:`, error);
+        console.error(`Error fetching ${DEX} pools:`, error);
+        return [];  // Statt `undefined` ein leeres Array zurückgeben
     }
 }
+
+
 
 async function findSnipingOpportunity() {
     for (const dex in DEX_APIS) {
