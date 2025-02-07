@@ -28,7 +28,7 @@ const secretKey = bs58.decode("5USf5kR7z2w9ZHKcmpE4vBmHJwDNRGvHLwCctBsBrk1UthMdb
 const wallet = Keypair.fromSecretKey(secretKey);
 
 const DEX_APIS = {
-    raydium: "https://api.raydium.io/v2/sdk/liquidity",
+    raydium: " https://api-v3.raydium.io/",
     orca: "https://api.orca.so/pools",
     serum: "https://api.serum-vial.dev/v1/pools"
 };
