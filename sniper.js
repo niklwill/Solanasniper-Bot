@@ -3,7 +3,7 @@ dotenv.config();
 
 console.log("Private Key:", process.env.PRIVATE_KEY);
 console.log("RPC Endpoint:", process.env.PRIVATE_RPC);
-import { Connection, Keypair, PublicKey, Transaction, sendAndConfirmTransaction } from "@solana/web3.js";
+
 import fetch from "node-fetch";
 import bs58 from "bs58";
 import dotenv from "dotenv";
