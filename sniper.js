@@ -47,16 +47,19 @@ async function getPools(DEX) {
     try {
         const response = await fetch(DEX_APIS[DEX]);
         const data = await response.json();
-        
-        console.log(`Fetched data from ${DEX}:`, data); // 🛑 Debug-Ausgabe
-        
+
+        console.log(`Fetched data from ${DEX}:`, data); // Debugging-Ausgabe
+
+        if (!data || !Array.isArray(data)) {
+            throw new Error(`Invalid response format from ${DEX}`);
+        }
+
         return data;
     } catch (error) {
         console.error(`Error fetching ${DEX} pools:`, error);
-        return [];  // Statt `undefined` ein leeres Array zurückgeben
+        return []; // Leeres Array zurückgeben, um Absturz zu vermeiden
     }
 }
-
 
 
 async function findSnipingOpportunity() {
