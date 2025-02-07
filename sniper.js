@@ -29,12 +29,12 @@ const wallet = Keypair.fromSecretKey(secretKey);
 
 const DEX_APIS = {
     raydium: " https://api-v3.raydium.io/",
-    orca: "https://streaming.bitquery.io/eap",
+   
     
 };
 
 // Vertrauenswürdige Pools (IDs müssen noch angepasst werden)
-const TRUSTED_POOLS = ["POOL_ID_1", "POOL_ID_2", "POOL_ID_3"];
+const TRUSTED_POOLS = ["POOL_ID_1", ];
 const MIN_LIQUIDITY = 10000;
 const MAX_PRICE = 0.1;
 
