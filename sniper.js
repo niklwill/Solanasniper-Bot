@@ -29,8 +29,8 @@ const wallet = Keypair.fromSecretKey(secretKey);
 
 const DEX_APIS = {
     raydium: " https://api-v3.raydium.io/",
-    orca: "https://api.orca.so/pools",
-    serum: "https://api.serum-vial.dev/v1/pools"
+    orca: "https://streaming.bitquery.io/eap",
+    
 };
 
 // Vertrauenswürdige Pools (IDs müssen noch angepasst werden)
