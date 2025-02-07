@@ -6,6 +6,7 @@ import { clusterApiUrl, Connection } from "@solana/web3.js";
 import { Connection, Keypair, PublicKey, Transaction, sendAndConfirmTransaction } from "@solana/web3.js"
 import dotenv from "dotenv";
 dotenv.config();
+console.log("Private Key:", process.env.PRIVATE_KEY);
 
 console.log("Private Key:", process.env.PRIVATE_KEY);
 console.log("RPC Endpoint:", process.env.PRIVATE_RPC);
