@@ -46,20 +46,21 @@ async function getDynamicSlippage(price) {
 async function getPools(DEX) {
     try {
         const response = await fetch(DEX_APIS[DEX]);
-        const data = await response.json();
+        const text = await response.text();
+        console.log(`Raw response from ${DEX}:`, text); // Debugging
+        const data = JSON.parse(text);
 
-        console.log(`Fetched data from ${DEX}:`, data); // Debugging-Ausgabe
-
-        if (!data || !Array.isArray(data)) {
-            throw new Error(`Invalid response format from ${DEX}`);
+        if (!data || typeof data !== 'object') {
+            throw new Error(`Unexpected response format from ${DEX}`);
         }
 
         return data;
     } catch (error) {
         console.error(`Error fetching ${DEX} pools:`, error);
-        return []; // Leeres Array zurückgeben, um Absturz zu vermeiden
+        return [];
     }
 }
+
 
 
 async function findSnipingOpportunity() {
