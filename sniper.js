@@ -1,3 +1,8 @@
+import { clusterApiUrl, Connection } from "@solana/web3.js";
+ 
+(async () => {
+  const connection = new Connection(clusterApiUrl("mainnet-beta"), "confirmed");
+})();
 import { Connection, Keypair, PublicKey, Transaction, sendAndConfirmTransaction } from "@solana/web3.js"
 import dotenv from "dotenv";
 dotenv.config();
