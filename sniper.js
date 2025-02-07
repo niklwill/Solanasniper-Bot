@@ -46,9 +46,11 @@ async function getDynamicSlippage(price) {
 async function getPools(DEX) {
     try {
         const response = await fetch(DEX_APIS[DEX]);
-        const text = await response.text();
-        console.log(`Raw response from ${DEX}:`, text); // Debugging
+        const text = await response.text();  // Rohdaten ausgeben
+        console.log(`Raw response from ${DEX}:`, text);
+
         const data = JSON.parse(text);
+        console.log(`Parsed data from ${DEX}:`, data);
 
         if (!data || typeof data !== 'object') {
             throw new Error(`Unexpected response format from ${DEX}`);
