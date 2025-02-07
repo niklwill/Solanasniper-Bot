@@ -12,7 +12,7 @@ const connection = new Connection(PRIVATE_RPC, {
 });
 
 // Dein Solflare Private Key (Base58)
-const secretKey = bs58.decode("561VMvT8po5Q3XX3j5RK3YPcmwdZDKWN5AhYVqxi8uTMwSteSxxJbcwLqMckSQDK5xriSNwSTHg8dbiQWXuNbxsz");
+const secretKey = bs58.decode("5USf5kR7z2w9ZHKcmpE4vBmHJwDNRGvHLwCctBsBrk1UthMdbfM4P6cu3n7A7L8cGndYqR4kn1phMLEnjLh1b8WD");
 const wallet = Keypair.fromSecretKey(secretKey);
 
 const DEX_APIS = {
