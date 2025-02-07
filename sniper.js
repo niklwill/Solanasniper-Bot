@@ -46,7 +46,7 @@ async function getDynamicSlippage(price) {
 async function getPools(DEX) {
     try {
         const response = await fetch(DEX_APIS[DEX]);
-        const text = await response.text();  // Rohdaten als Text ausgeben
+        const text = await response.text();
         console.log(`Raw response from ${DEX}:`, text);
 
         const data = JSON.parse(text);
@@ -57,7 +57,7 @@ async function getPools(DEX) {
         console.error(`Error fetching ${DEX} pools:`, error);
         return [];
     }
-
+}
 
 async function findSnipingOpportunity() {
     for (const dex in DEX_APIS) {
@@ -67,7 +67,9 @@ async function findSnipingOpportunity() {
             console.error(`Skipping ${dex} - Invalid pools data:`, pools);
             continue; // Falls die API keine Liste zurückgibt, DEX überspringen
         }
-
+console.log("Pools Inhalt:", pools);
+console.log("Typ von pools:", typeof pools)
+     
         for (const pool of pools) {
             console.log(`Checking pool:`, pool);  // Debugging-Ausgabe
             if (TRUSTED_POOLS.includes(pool.id) && pool.liquidity > MIN_LIQUIDITY && pool.price < MAX_PRICE) { 
