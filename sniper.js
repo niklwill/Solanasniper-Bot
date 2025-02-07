@@ -68,9 +68,16 @@ async function getPools(DEX) {
 async function findSnipingOpportunity() {
     for (const dex in DEX_APIS) {
         const pools = await getPools(dex);
+
+        if (!pools || !Array.isArray(pools)) {
+            console.error(`Skipping ${dex} - Invalid pools data:`, pools);
+            continue; // Falls die API keine Liste zurückgibt, DEX überspringen
+        }
+
         for (const pool of pools) {
+            console.log(`Checking pool:`, pool);  // Debugging-Ausgabe
             if (TRUSTED_POOLS.includes(pool.id) && pool.liquidity > MIN_LIQUIDITY && pool.price < MAX_PRICE) { 
-                console.log(`Sniping-Möglichkeit auf ${dex}: ${pool.id} zu Preis ${pool.price}`);
+                console.log(`Sniping opportunity on ${dex}: ${pool.id} at price ${pool.price}`);
                 await executeTrade(pool.id, pool.price, dex);
             }
         }
