@@ -17,14 +17,14 @@ import dotenv from "dotenv";
 dotenv.config();
 
 // Deine Helius RPC URL (ersetze durch deinen eigenen API Key)
-const PRIVATE_RPC = "https://mainnet.helius-rpc.com/?api-key=03364cae-c434-41ae-b25a-70efc490d68d";  
+const PRIVATE_RPC = "https://mainnet.helius-rpc.com/?api-key=03-b25a-70efc490d68d";  
 const connection = new Connection(PRIVATE_RPC, {
     commitment: "confirmed",
     wsEndpoint: "wss://mainnet.helius-rpc.com"
 });
 
 // Dein Solflare Private Key (Base58)
-const secretKey = bs58.decode("5USf5kR7z2w9ZHKcmpE4vBmHJwDNRGvHLwCctBsBrk1UthMdbfM4P6cu3n7A7L8cGndYqR4kn1phMLEnjLh1b8WD");
+const secretKey = bs58.decode("5USf5kR7z2w9ZHKcmpE4vBmHJwD6cu3n7A7L8cGndYqR4kn1phMLEnjLh1b8WD");
 const wallet = Keypair.fromSecretKey(secretKey);
 
 const DEX_APIS = {
