@@ -1,8 +1,5 @@
 # -*- coding: utf-8 -*-
 """
-Created on Thu Feb 20 10:37:55 2025
-
-@author: niklwill
 
 import os
 import time
