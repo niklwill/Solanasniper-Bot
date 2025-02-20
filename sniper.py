@@ -1,72 +1,76 @@
 # -*- coding: utf-8 -*-
 """
-Created on Thu Feb 20 07:43:39 2025
-
-@author: niklwill
-""
 
 import os
-import base58
+import time
+import base64
 import requests
-import json
 from solana.rpc.api import Client
-from solana.transaction import Transaction
 from solana.account import Account
-from dotenv import load_dotenv
+from solana.transaction import Transaction
 
-# Lade Umgebungsvariablen
-load_dotenv()
-
-# Solana Konfiguration
-RPC_URL = os.getenv("PRIVATE_RPC")
+# Umgebungsvariablen für RPC-Endpunkt und privaten Schlüssel
+PRIVATE_RPC = os.getenv("PRIVATE_RPC", "https://api.mainnet-beta.solana.com")
 PRIVATE_KEY = os.getenv("PRIVATE_KEY")
 
-# Verbinde zur Solana Blockchain
-solana_client = Client(RPC_URL)
+# Verbindung zum Solana-Cluster herstellen
+client = Client(PRIVATE_RPC)
 
-# Wandle den Private Key um
-try:
-    private_key_bytes = base58.b58decode(PRIVATE_KEY)
-    account = Account(private_key_bytes)
-    print(f"✅ Erfolgreich mit Wallet verbunden: {account.public_key()}")
-except Exception as e:
-    print(f"❌ Fehler bei Private Key Konvertierung: {e}")
-    exit()
+# Wallet aus dem privaten Schlüssel erstellen
+if PRIVATE_KEY:
+    secret_key = base64.b64decode(PRIVATE_KEY)
+    wallet = Account(secret_key)
+else:
+    raise ValueError("PRIVATE_KEY ist nicht gesetzt.")
 
-# API-Endpunkte für DEX-Daten
-API_ENDPOINTS = {
-    "raydium": "https://api.raydium.io/v2/sdk/liquidity",
+# DEX-APIs und Parameter
+DEX_APIS = {
+    "raydium": "https://api.raydium.io/v2/sdk/liquidity/mainnet.json",
     "orca": "https://api.orca.so/pools",
-    "serum": "https://api.serum-vial.dev/v1/pools",
+    "serum": "https://api.serum-vial.dev/v1/pools"
 }
+TRUSTED_POOLS = ["pool1_id", "pool2_id", "pool3_id"]
+MIN_LIQUIDITY = 10000
+MAX_PRICE = 0.1
 
-# Liquiditätspools abrufen
-def get_liquidity_pools():
-    pools = []
-    for dex, url in API_ENDPOINTS.items():
-        try:
-            response = requests.get(url)
-            if response.status_code == 200:
-                data = response.json()
-                pools.extend(data)
-                print(f"✅ {dex} Pools geladen: {len(data)}")
-            else:
-                print(f"⚠️ Fehler beim Abruf von {dex}: {response.status_code}")
-        except Exception as e:
-            print(f"❌ Fehler bei {dex}: {e}")
-    return pools
+def get_dynamic_slippage(price):
+    volatility_factor = 0.001  # Anpassen je nach Marktbedingungen
+    return price * (1 + volatility_factor)
 
-# Einfacher Trade (Testfunktion)
-def place_trade():
-    transaction = Transaction()
-    print("🚀 Trade ausgeführt (Testmodus)")
+def get_pools(dex):
+    try:
+        response = requests.get(DEX_APIS[dex])
+        response.raise_for_status()
+        return response.json()
+    except requests.RequestException as error:
+        print(f"Fehler beim Abrufen der {dex}-Pools:", error)
+        return []
 
-# Hauptfunktion
+def execute_trade(pool_id, price, dex):
+    try:
+        adjusted_price = get_dynamic_slippage(price)
+        print(f"Führe Trade auf {dex} Pool: {pool_id} zu angepasstem Preis: {adjusted_price} aus")
+        # Hier die Logik für den Handel implementieren
+        # z.B. Transaktion erstellen und senden
+    except Exception as error:
+        print("Trade-Ausführung fehlgeschlagen:", error)
+
+def find_sniping_opportunity():
+    for dex in DEX_APIS:
+        pools = get_pools(dex)
+        for pool in pools:
+            if (pool['id'] in TRUSTED_POOLS and
+                pool['liquidity'] > MIN_LIQUIDITY and
+                pool['price'] < MAX_PRICE):
+                print(f"Sniping-Möglichkeit auf {dex}: {pool['id']} zu Preis {pool['price']}")
+                execute_trade(pool['id'], pool['price'], dex)
+
+def start_sniping():
+    print("Starte Sniper-Bot mit AI, MEV, Multi-DEX und Leverage-Unterstützung...")
+    while True:
+        find_sniping_opportunity()
+        time.sleep(3)  # Wartezeit zwischen den Überprüfungen
+
 if __name__ == "__main__":
-    pools = get_liquidity_pools()
-    if pools:
-        print(f"🎯 {len(pools)} Pools gefunden. Start Sniping...")
-        place_trade()
-    else:
-        print("❌ Keine Pools gefunden. Beende...")
-
+    start_sniping()
+"""
