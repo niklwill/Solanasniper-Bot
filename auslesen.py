@@ -1,66 +1,67 @@
 # -*- coding: utf-8 -*-
 """
-Created on Mon Feb 24 13:19:08 2025
+Created on Mon Feb 24 15:09:06 2025
 
 @author: niklwill
 """
 
-import RPi.GPIO as GPIO
+import os
+import glob
 import time
+import RPi.GPIO as GPIO
 
-DHT_PIN = 4  # GPIO-Pin, an den der DHT11 angeschlossen ist
+# 🌱 GPIO-Definitionen
+FEUCHTIGKEIT_SENSOR_PIN = 4  # Funduino D0 an GPIO4
+TEMPERATUR_SENSOR_PIN = 18  # KY-001 (DS18B20) an GPIO18
 
-def read_dht11():
+# 🌡 1-Wire Initialisierung (DS18B20)
+def lese_temperatur():
+    basis_pfad = "/sys/bus/w1/devices/"
+    try:
+        sensor_ordner = glob.glob(basis_pfad + "28*")[0]
+        sensor_datei = sensor_ordner + "/w1_slave"
+
+        with open(sensor_datei, "r") as datei:
+            zeilen = datei.readlines()
+
+        while "YES" not in zeilen[0]:  # Sensor antwortet nicht sofort
+            time.sleep(0.2)
+            with open(sensor_datei, "r") as datei:
+                zeilen = datei.readlines()
+
+        temp_pos = zeilen[1].find("t=")
+        if temp_pos != -1:
+            temp_wert = zeilen[1][temp_pos+2:]
+            temp_celsius = float(temp_wert) / 1000.0
+            return temp_celsius
+    except:
+        return None  # Falls kein Sensor erkannt wird
+
+# 🌱 Feuchtigkeitssensor auslesen (digital)
+def lese_feuchtigkeit():
     GPIO.setmode(GPIO.BCM)
-    GPIO.setup(DHT_PIN, GPIO.OUT)
-    
-    # Startsignal an den Sensor senden
-    GPIO.output(DHT_PIN, GPIO.LOW)
-    time.sleep(0.018)  # Mindestens 18ms Low-Signal
-    GPIO.output(DHT_PIN, GPIO.HIGH)
-    time.sleep(0.00002)  # 20µs warten
+    GPIO.setup(FEUCHTIGKEIT_SENSOR_PIN, GPIO.IN)
 
-    # Wechsel zu Eingabemodus
-    GPIO.setup(DHT_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-
-    # Antwortsignal des Sensors abwarten
-    timeout = time.time() + 0.1  # Timeout für fehlerhafte Messungen
-    while GPIO.input(DHT_PIN) == GPIO.HIGH:
-        if time.time() > timeout:
-            print("Fehler: Kein Antwortsignal vom Sensor")
-            GPIO.cleanup()
-            return None
-    while GPIO.input(DHT_PIN) == GPIO.LOW:
-        pass
-    while GPIO.input(DHT_PIN) == GPIO.HIGH:
-        pass
-
-    # Datenbits auslesen (40 Bits = 5 Bytes)
-    data = []
-    for i in range(40):
-        while GPIO.input(DHT_PIN) == GPIO.LOW:
-            pass  # Start jedes Bits
-
-        start_time = time.time()
-        while GPIO.input(DHT_PIN) == GPIO.HIGH:
-            pass  # Länge des High-Signals messen
-
-        bit_length = time.time() - start_time
-        data.append(1 if bit_length > 0.00004 else 0)  # Ungefähr 40µs = 0,00004s
-
-    # Bytes zusammensetzen
-    humidity = sum([data[i] << (7 - (i % 8)) for i in range(8)])
-    temperature = sum([data[i + 16] << (7 - (i % 8)) for i in range(8)])
-
-    GPIO.cleanup()
-    return temperature, humidity
-
-while True:
-    result = read_dht11()
-    if result:
-        temp, hum = result
-        print(f"Temperatur: {temp}°C, Feuchtigkeit: {hum}%")
+    if GPIO.input(FEUCHTIGKEIT_SENSOR_PIN) == GPIO.HIGH:
+        return "Trocken"
     else:
-        print("Fehlgeschlagene Messung, versuche es erneut.")
-    
-    time.sleep(30)  # 30 Sekunden warten
+        return "Feucht"
+
+# 📊 Daten auslesen
+try:
+    while True:
+        temperatur = lese_temperatur()
+        feuchtigkeit = lese_feuchtigkeit()
+        
+        if temperatur is not None:
+            print(f"🌡 Temperatur: {temperatur:.2f}°C")
+        else:
+            print("⚠ Fehler: Kein Temperatursensor gefunden")
+        
+        print(f"🌱 Bodenfeuchtigkeit: {feuchtigkeit}")
+        print("-" * 30)
+
+        time.sleep(5)  # Alle 5 Sekunden neue Werte
+except KeyboardInterrupt:
+    print("Beende Messung...")
+    GPIO.cleanup()
