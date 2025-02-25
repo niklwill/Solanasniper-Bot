@@ -1,0 +1,74 @@
+import glob
+import time
+import RPi.GPIO as GPIO
+
+# 🛠 GPIO Setup für 7-Segment-Anzeige (angepasste Belegung)
+SEGMENT_PINS = {
+    "A": 5, "F": 26, "B": 21, "G": 19,
+    "C": 16, "D": 20, "E": 12, "DP": 6
+}
+DIGIT_PINS = [13, 17, 27, 22]  # Falls 4-stellige Anzeige
+
+COMMON_CATHODE = True  # Falls gemeinsame Anode, auf False ändern
+
+# 🔢 7-Segment-Zahlenmuster (0-9, ° und Leerzeichen)
+SEGMENT_CODES = {
+    "0": "11111100", "1": "01100000", "2": "11011010", "3": "11110010",
+    "4": "01100110", "5": "10110110", "6": "10111110", "7": "11100000",
+    "8": "11111110", "9": "11110110", "°": "10000010", " ": "00000000"
+}
+
+GPIO.setmode(GPIO.BCM)
+for pin in SEGMENT_PINS.values():
+    GPIO.setup(pin, GPIO.OUT)
+    GPIO.output(pin, GPIO.LOW if COMMON_CATHODE else GPIO.HIGH)
+for pin in DIGIT_PINS:
+    GPIO.setup(pin, GPIO.OUT)
+    GPIO.output(pin, GPIO.HIGH)  # Deaktiviert Digits
+
+# 🌡 DS18B20 auslesen
+base_dir = "/sys/bus/w1/devices/"
+device_folder = glob.glob(base_dir + "28*")[0]
+device_file = device_folder + "/w1_slave"
+
+def read_temp():
+    try:
+        with open(device_file, "r") as f:
+            lines = f.readlines()
+        while "YES" not in lines[0]:
+            time.sleep(0.2)
+            with open(device_file, "r") as f:
+                lines = f.readlines()
+        temp_c = float(lines[1].split("t=")[1]) / 1000.0
+        return round(temp_c)  # Ganze Zahl
+    except:
+        return None
+
+# 🖥 7-Segment-Anzeige steuern
+def show_number(number):
+    display = f"{number:2}°"  # XX°
+    for digit_index, char in enumerate(display):
+        if digit_index >= len(DIGIT_PINS):
+            break
+        GPIO.output(DIGIT_PINS, GPIO.HIGH)  # Alle Digits deaktivieren
+        pattern = SEGMENT_CODES.get(char, SEGMENT_CODES[" "])
+        for segment, pin in SEGMENT_PINS.items():
+            state = GPIO.HIGH if COMMON_CATHODE else GPIO.LOW if pattern["ABCDEFGDP".index(segment)] == "1" else GPIO.LOW if COMMON_CATHODE else GPIO.HIGH
+            GPIO.output(pin, state)
+        GPIO.output(DIGIT_PINS[digit_index], GPIO.LOW)  # Aktives Digit an
+        time.sleep(0.005)
+
+# 📊 Hauptprogramm
+try:
+    while True:
+        temp = read_temp()
+        print(f"🌡 Temperatur: {temp}°C")
+        if temp is not None:
+            show_number(temp)
+        else:
+            show_number("  ")  # Fehleranzeige
+        time.sleep(1)
+
+except KeyboardInterrupt:
+    GPIO.cleanup()
+    print("Programm beendet.")
