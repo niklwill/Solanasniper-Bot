@@ -1,74 +1,81 @@
-import glob
-import time
 import RPi.GPIO as GPIO
+import time
+import glob
 
-# 🛠 GPIO Setup für 7-Segment-Anzeige (angepasste Belegung)
-SEGMENT_PINS = {
-    "A": 5, "F": 26, "B": 21, "G": 19,
-    "C": 16, "D": 20, "E": 12, "DP": 6
-}
-DIGIT_PINS = [13, 17, 27, 22]  # Falls 4-stellige Anzeige
-
-COMMON_CATHODE = True  # Falls gemeinsame Anode, auf False ändern
-
-# 🔢 7-Segment-Zahlenmuster (0-9, ° und Leerzeichen)
-SEGMENT_CODES = {
-    "0": "11111100", "1": "01100000", "2": "11011010", "3": "11110010",
-    "4": "01100110", "5": "10110110", "6": "10111110", "7": "11100000",
-    "8": "11111110", "9": "11110110", "°": "10000010", " ": "00000000"
-}
-
+# BCM-Nummerierung aktivieren
 GPIO.setmode(GPIO.BCM)
-for pin in SEGMENT_PINS.values():
-    GPIO.setup(pin, GPIO.OUT)
-    GPIO.output(pin, GPIO.LOW if COMMON_CATHODE else GPIO.HIGH)
-for pin in DIGIT_PINS:
-    GPIO.setup(pin, GPIO.OUT)
-    GPIO.output(pin, GPIO.HIGH)  # Deaktiviert Digits
 
-# 🌡 DS18B20 auslesen
-base_dir = "/sys/bus/w1/devices/"
-device_folder = glob.glob(base_dir + "28*")[0]
-device_file = device_folder + "/w1_slave"
+# 7-Segment-Pins für die Segmente A-G und DP
+segments = {
+    'A': 5, 'B': 21, 'C': 16, 'D': 20, 'E': 12, 'F': 26, 'G': 19, 'DP': 6
+}
+for segment in segments.values():
+    GPIO.setup(segment, GPIO.OUT)
+    GPIO.output(segment, 0)
+
+# Digit-Pins (Multiplexing)
+digits = [22, 27, 17, 23]  # DIG0, DIG1, DIG2, DIG3
+for digit in digits:
+    GPIO.setup(digit, GPIO.OUT)
+    GPIO.output(digit, 1)  # Startet ausgeschaltet
+
+# Zahlen als Segment-Matrix
+num = {
+    '0': (1, 1, 1, 1, 1, 1, 0),
+    '1': (0, 1, 1, 0, 0, 0, 0),
+    '2': (1, 1, 0, 1, 1, 0, 1),
+    '3': (1, 1, 1, 1, 0, 0, 1),
+    '4': (0, 1, 1, 0, 0, 1, 1),
+    '5': (1, 0, 1, 1, 0, 1, 1),
+    '6': (1, 0, 1, 1, 1, 1, 1),
+    '7': (1, 1, 1, 0, 0, 0, 0),
+    '8': (1, 1, 1, 1, 1, 1, 1),
+    '9': (1, 1, 1, 1, 0, 1, 1),
+    'C': (1, 0, 0, 1, 1, 1, 0)  # 'C' für Celsius
+}
+
+# 1-Wire Initialisierung (DS18B20)
+base_dir = '/sys/bus/w1/devices/'
+device_folder = glob.glob(base_dir + '28*')[0]  # Falls Fehler: Kein Sensor erkannt
+device_file = device_folder + '/w1_slave'
 
 def read_temp():
-    try:
-        with open(device_file, "r") as f:
+    """Liest die Temperatur aus dem DS18B20-Sensor."""
+    with open(device_file, 'r') as f:
+        lines = f.readlines()
+    
+    while lines[0].strip()[-3:] != 'YES':
+        time.sleep(0.2)
+        with open(device_file, 'r') as f:
             lines = f.readlines()
-        while "YES" not in lines[0]:
-            time.sleep(0.2)
-            with open(device_file, "r") as f:
-                lines = f.readlines()
-        temp_c = float(lines[1].split("t=")[1]) / 1000.0
-        return round(temp_c)  # Ganze Zahl
-    except:
-        return None
+    
+    equals_pos = lines[1].find('t=')
+    if equals_pos != -1:
+        temp_string = lines[1][equals_pos+2:]
+        temp_c = round(float(temp_string) / 1000.0)  # Temperatur auf ganze Zahl runden
+        return temp_c
 
-# 🖥 7-Segment-Anzeige steuern
-def show_number(number):
-    display = f"{number:2}°"  # XX°
-    for digit_index, char in enumerate(display):
-        if digit_index >= len(DIGIT_PINS):
-            break
-        GPIO.output(DIGIT_PINS, GPIO.HIGH)  # Alle Digits deaktivieren
-        pattern = SEGMENT_CODES.get(char, SEGMENT_CODES[" "])
-        for segment, pin in SEGMENT_PINS.items():
-            state = GPIO.HIGH if COMMON_CATHODE else GPIO.LOW if pattern["ABCDEFGDP".index(segment)] == "1" else GPIO.LOW if COMMON_CATHODE else GPIO.HIGH
-            GPIO.output(pin, state)
-        GPIO.output(DIGIT_PINS[digit_index], GPIO.LOW)  # Aktives Digit an
-        time.sleep(0.005)
+def display_number(value):
+    """Zeigt die Temperatur als XX°C auf der SH5461AS an."""
+    value = str(value)  # In String umwandeln
+    if len(value) == 1:
+        value = ' ' + value  # Falls einstellig, linksbündig auffüllen
+    
+    value += 'C'  # Temperaturwert mit 'C' anzeigen
+    
+    for digit in range(4):  # Multiplexing der 4 Stellen
+        for seg, pin in zip(num[value[digit]], segments.values()):
+            GPIO.output(pin, seg)
+        
+        GPIO.output(digits[digit], 0)  # Digit aktivieren
+        time.sleep(0.005)  # Kurze Anzeigedauer (Multiplexing)
+        GPIO.output(digits[digit], 1)  # Digit deaktivieren
 
-# 📊 Hauptprogramm
 try:
     while True:
-        temp = read_temp()
-        print(f"🌡 Temperatur: {temp}°C")
-        if temp is not None:
-            show_number(temp)
-        else:
-            show_number("  ")  # Fehleranzeige
-        time.sleep(1)
-
-except KeyboardInterrupt:
-    GPIO.cleanup()
-    print("Programm beendet.")
+        temperature = read_temp()
+        print(f"Temperatur: {temperature}°C")
+        for _ in range(100):  # Wiederholt die Anzeige für Stabilität
+            display_number(temperature)
+finally:
+    GPIO.cleanup()  # GPIOs beim Beenden zurücksetzen
